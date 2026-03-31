@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
 	getCart,
 	placeOrder,
@@ -15,13 +15,16 @@ function Cart() {
 	const [removingId, setRemovingId] = useState(null);
 	const [error, setError] = useState("");
 	const [successMessage, setSuccessMessage] = useState("");
+
 	const userId = getLoggedInUserId();
 
+	// ✅ Memoized total
 	const estimatedTotal = useMemo(() => {
 		return cart.reduce((sum, item) => sum + resolveLineItemTotal(item), 0);
 	}, [cart]);
 
-	const loadCart = async () => {
+	// ✅ FIXED: useCallback added
+	const loadCart = useCallback(async () => {
 		if (!userId) {
 			setError("Please login to view cart.");
 			setCart([]);
@@ -41,11 +44,12 @@ function Cart() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [userId]);
 
+	// ✅ FIXED: dependency added
 	useEffect(() => {
 		loadCart();
-	}, []);
+	}, [loadCart]);
 
 	const order = async () => {
 		if (!userId) {
@@ -93,12 +97,20 @@ function Cart() {
 			<section className="hero-panel compact">
 				<p className="eyebrow">Your Cart</p>
 				<h1>Review your selected items.</h1>
-				<p className="hero-copy">Refresh the latest cart state and place your order in one tap.</p>
+				<p className="hero-copy">
+					Refresh the latest cart state and place your order in one tap.
+				</p>
 			</section>
 
 			<div className="cart-actions">
-				<button className="btn-primary" onClick={loadCart}>Refresh Cart</button>
-				<button className="btn-ghost" onClick={order} disabled={!cart.length || placingOrder}>
+				<button className="btn-primary" onClick={loadCart}>
+					Refresh Cart
+				</button>
+				<button
+					className="btn-ghost"
+					onClick={order}
+					disabled={!cart.length || placingOrder}
+				>
 					{placingOrder ? "Placing..." : "Place Order"}
 				</button>
 			</div>
@@ -106,6 +118,7 @@ function Cart() {
 			{error && <p className="status status-error">{error}</p>}
 			{successMessage && <p className="status">{successMessage}</p>}
 			{loading && <p className="status">Loading cart...</p>}
+
 			{!loading && !error && cart.length === 0 && (
 				<p className="status">Your cart is empty.</p>
 			)}
@@ -115,6 +128,7 @@ function Cart() {
 					<article className="cart-item" key={item.id}>
 						<p><strong>Product ID:</strong> {item.productId}</p>
 						<p><strong>Quantity:</strong> {item.quantity}</p>
+
 						<button
 							className="btn-ghost"
 							onClick={() => removeItem(item.id)}
@@ -128,10 +142,12 @@ function Cart() {
 
 			<div className="cart-total">
 				<span>Estimated Total</span>
-				<strong>₹{new Intl.NumberFormat("en-IN").format(estimatedTotal || 0)}</strong>
+				<strong>
+					₹{new Intl.NumberFormat("en-IN").format(estimatedTotal || 0)}
+				</strong>
 			</div>
 		</div>
 	);
 }
 
-export default Cart
+export default Cart;
